@@ -6,7 +6,7 @@
   'use strict';
 
   // Default GAS WebApp Executable URL (Can be changed by Admin in UI)
-  var DEFAULT_GAS_URL = localStorage.getItem('GAS_WEBAPP_URL') || '';
+  var DEFAULT_GAS_URL = localStorage.getItem('GAS_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbzfdWxMBFircPVz6X_EGas5IGxeAN0k9W70Ut7vWr0CR97zKVcvrpHkJz9DiJe-WipEkw/exec';
 
   var GasAPI = {
     getUrl: function () {
