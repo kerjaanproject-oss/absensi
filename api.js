@@ -6,7 +6,7 @@
   'use strict';
 
   // Default GAS WebApp Executable URL
-  var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbztKgd63MbEMMPfRyaZk-YeZpf7Lp8ULj2V2H6-y1HwDvezvrqquhjS8v7INgnZU8fexA/exec';
+  var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbw4nB4uu3Vk9DaA0QCycSvHwuQT93P16Elip7z7YIsl0fJcgBfXG3PafHhkP9hDpiWchw/exec';
 
   var GasAPI = {
     getUrl: function () {
