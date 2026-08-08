@@ -61,7 +61,7 @@ function dispatchApiAction(action, args) {
     'saveWorkSchedule': saveWorkSchedule,
     'getTodayScheduleShift': getTodayScheduleShift,
     'getDashboardStats': getDashboardStats,
-    'getRolePermissions': getRolePermissions,
+    'getRolePermissions': getPermissionsForRole,
     'saveRolePermissions': saveRolePermissions,
     'getPermissionsForRole': getPermissionsForRole,
     'getAllMasterJabatan': getAllMasterJabatan,
