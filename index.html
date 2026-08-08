@@ -1666,20 +1666,23 @@
         container.innerHTML = html;
       }
 
-      // PROMISE RUNNER FOR GAS
+      // PROMISE RUNNER FOR GAS / PWA
       function gasRun(funcName) {
         var args = Array.prototype.slice.call(arguments, 1);
+        if (window.GasAPI && (window.GasAPI.getUrl() || typeof google === 'undefined' || !google.script || !google.script.run)) {
+          return window.GasAPI.call.apply(window.GasAPI, [funcName].concat(args));
+        }
         return new Promise(function (resolve, reject) {
-          if (typeof google === 'undefined' || !google.script || !google.script.run) {
-            reject(new Error("Koneksi Google script run tidak tersedia. Pastikan dijalankan di dalam Web App Google Apps Script."));
-            return;
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            var runner = google.script.run
+              .withSuccessHandler(resolve)
+              .withFailureHandler(function (err) {
+                reject(new Error(err.message || err.toString()));
+              });
+            runner[funcName].apply(runner, args);
+          } else {
+            reject(new Error("URL WebApp Backend belum diatur. Silakan klik tombol 🔌 di pojok kanan atas untuk memasukkan URL WebApp Google Apps Script."));
           }
-          var runner = google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(function (err) {
-              reject(new Error(err.message || err.toString()));
-            });
-          runner[funcName].apply(runner, args);
         });
       }
 
