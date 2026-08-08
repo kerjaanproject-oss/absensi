@@ -40,7 +40,7 @@
     }
 
     // 2. Global GAS API URL & Dual Communication gasRun()
-    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyKA7h8SNnRWC4heu0dnRKRgM4w-nafP8xKxzHxPUL4GuxCodZ_xm2gsEI9uJKSoI7Hqw/exec';
+    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbw1sM4xESeXFDUmwrB7IHiR4ZqWgp6hCbIPiaHnXO0RAEqB_gX2jfnmvK0evtc04nVV/exec';
 
     function getGasUrl() {
       var saved = localStorage.getItem('GAS_WEBAPP_URL');
@@ -376,7 +376,7 @@
       <!-- Footer Keluar & Install App -->
       <div class="p-4 border-t border-slate-800 space-y-2">
         <button id="btnPwaInstallSidebar" onclick="window.installPWAApp()"
-          class="d-none flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-emerald-950/50 hover:bg-gradient-to-r hover:from-emerald-600/50 hover:to-teal-600/40 border border-emerald-800/60 text-emerald-300 hover:text-emerald-100 transition-all duration-200 text-sm font-medium">
+          class="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-emerald-950/50 hover:bg-gradient-to-r hover:from-emerald-600/50 hover:to-teal-600/40 border border-emerald-800/60 text-emerald-300 hover:text-emerald-100 transition-all duration-200 text-sm font-medium">
           <i class="fa-solid fa-download w-5 text-emerald-400"></i> Install Aplikasi HP
         </button>
 
@@ -402,7 +402,7 @@
         <div class="flex items-center gap-3 sm:gap-4">
           <!-- PWA Install Button -->
           <button id="btnPwaInstall" onclick="window.installPWAApp()"
-            class="d-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
             <i class="fa-solid fa-download"></i> Install App
           </button>
 
