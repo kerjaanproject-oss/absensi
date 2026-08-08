@@ -40,7 +40,7 @@
     }
 
     // 2. Global GAS API URL & Dual Communication gasRun()
-    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxXyOctKYDpLoXcSw4hEi2p5c-hCH2dnMTDL01KZYy0pCG--kIdprAn5XPsGWpi0CFu/exec';
+    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxHPlu3itGE7F1GgAP74HwpXmeF86hWK4xpNJpE9Otoz4BA1tRsu89bmVpirPW9l0Elqg/exec';
 
     function getGasUrl() {
       var saved = localStorage.getItem('GAS_WEBAPP_URL');
@@ -1812,6 +1812,7 @@
 
       // INITIAL PROCESS
       document.addEventListener('DOMContentLoaded', function () {
+        initPWA();
         Auth.init();
         initDigitalClock();
 
@@ -4774,6 +4775,9 @@
           console.log('PWA init note:', err);
         }
       }
+
+      // Execute PWA Initialization immediately
+      initPWA();
 
       window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
