@@ -40,7 +40,17 @@
     }
 
     // 2. Global GAS API URL & Dual Communication gasRun()
-    window.GAS_API_URL = localStorage.getItem('GAS_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbxnVFtR4xCKXxl4FcT9KSj-F9aULeo6Ge6rzit7OsKuhCozG0pFj8DYwExVYg4pdNczFw/exec';
+    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzL6IR9NAKASK1GU2V54uMhCd_GAs709ijIZFJRazyelT2afbtXCHLvTAvYUQCwZy8M7A/exec';
+
+    function getGasUrl() {
+      var saved = localStorage.getItem('GAS_WEBAPP_URL');
+      if (saved && saved.trim() && saved.trim() !== 'undefined' && saved.trim() !== 'null' && saved.indexOf('script.google.com') !== -1) {
+        return saved.trim();
+      }
+      return DEFAULT_GAS_URL;
+    }
+
+    window.GAS_API_URL = getGasUrl();
 
     function gasRun(funcName) {
       var args = Array.prototype.slice.call(arguments, 1);
@@ -59,11 +69,7 @@
         }
 
         // Lingkungan GitHub Pages / Host Luar (via fetch)
-        var apiUrl = window.GAS_API_URL || localStorage.getItem('GAS_WEBAPP_URL');
-        if (!apiUrl) {
-          reject(new Error("URL WebApp Backend belum diatur. Silakan klik tombol 🔌 di header atas."));
-          return;
-        }
+        var apiUrl = getGasUrl();
 
         var payload = {
           action: funcName,
@@ -72,6 +78,7 @@
 
         fetch(apiUrl, {
           method: 'POST',
+          redirect: 'follow',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         })
@@ -93,7 +100,7 @@
           .catch(function (postErr) {
             var encodedArgs = encodeURIComponent(JSON.stringify(args));
             var getUrl = apiUrl + (apiUrl.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(funcName) + '&args=' + encodedArgs;
-            fetch(getUrl)
+            fetch(getUrl, { redirect: 'follow' })
               .then(function (res) { return res.text(); })
               .then(function (text) {
                 try {
@@ -103,7 +110,7 @@
                 }
               })
               .catch(function (getErr) {
-                reject(new Error("Gagal terhubung ke Google Apps Script: " + (postErr.message || getErr.message)));
+                reject(new Error("Gagal terhubung ke Google Apps Script backend. Pastikan kode Code.JS terbaru sudah di-copy ke script.google.com dan di-deploy ulang sebagai 'New Version' (Akses: Anyone)."));
               });
           });
       });
