@@ -18,7 +18,80 @@
   <!-- SheetJS for Excel Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- PWA API Bridge Script -->
-  <script src="js/api.js"></script>
+  <script>
+    (function (window) {
+      'use strict';
+      var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzL6IR9NAKASK1GU2V54uMhCd_GAs709ijIZFJRazyelT2afbtXCHLvTAvYUQCwZy8M7A/exec';
+
+      var GasAPI = {
+        getUrl: function () {
+          var saved = localStorage.getItem('GAS_WEBAPP_URL');
+          if (saved && saved.trim() && saved.trim() !== 'undefined' && saved.trim() !== 'null') {
+            return saved.trim();
+          }
+          return DEFAULT_GAS_URL;
+        },
+        setUrl: function (url) {
+          if (url && url.trim()) {
+            localStorage.setItem('GAS_WEBAPP_URL', url.trim());
+          } else {
+            localStorage.removeItem('GAS_WEBAPP_URL');
+          }
+        },
+        call: function (actionName) {
+          var args = Array.prototype.slice.call(arguments, 1);
+          var gasUrl = this.getUrl();
+
+          if (!gasUrl) {
+            if (window.google && window.google.script && window.google.script.run) {
+              return new Promise(function (resolve, reject) {
+                var runner = window.google.script.run
+                  .withSuccessHandler(function (res) { resolve(res); })
+                  .withFailureHandler(function (err) { reject(err); });
+                if (runner[actionName]) {
+                  runner[actionName].apply(runner, args);
+                } else {
+                  reject(new Error("Function " + actionName + " not found on server."));
+                }
+              });
+            }
+            return Promise.reject(new Error("URL Google Apps Script WebApp belum diatur. Silakan atur WebApp URL di menu Setelan."));
+          }
+
+          var payload = {
+            action: actionName,
+            args: args
+          };
+
+          return fetch(gasUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8'
+            },
+            body: JSON.stringify(payload)
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error("HTTP Error status: " + response.status);
+              }
+              return response.json();
+            })
+            .catch(function (err) {
+              console.warn('[GasAPI POST retry with GET]', actionName, err);
+              var encodedArgs = encodeURIComponent(JSON.stringify(args));
+              var getUrl = gasUrl + (gasUrl.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(actionName) + '&args=' + encodedArgs;
+              return fetch(getUrl)
+                .then(function (res) { return res.json(); })
+                .catch(function () {
+                  throw new Error("Gagal terhubung ke Google Apps Script backend. Pastikan WebApp URL sudah di-deploy dengan akses 'Anyone'.");
+                });
+            });
+        }
+      };
+
+      window.GasAPI = GasAPI;
+    })(window);
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700&display=swap');
 
@@ -1669,7 +1742,7 @@
       // PROMISE RUNNER FOR GAS / PWA
       function gasRun(funcName) {
         var args = Array.prototype.slice.call(arguments, 1);
-        if (window.GasAPI && (window.GasAPI.getUrl() || typeof google === 'undefined' || !google.script || !google.script.run)) {
+        if (window.GasAPI) {
           return window.GasAPI.call.apply(window.GasAPI, [funcName].concat(args));
         }
         return new Promise(function (resolve, reject) {
