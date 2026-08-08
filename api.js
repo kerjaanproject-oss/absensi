@@ -5,17 +5,22 @@
 (function (window) {
   'use strict';
 
-  // Default GAS WebApp Executable URL (Can be changed by Admin in UI)
-  var DEFAULT_GAS_URL = localStorage.getItem('GAS_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbzfdWxMBFircPVz6X_EGas5IGxeAN0k9W70Ut7vWr0CR97zKVcvrpHkJz9DiJe-WipEkw/exec';
+  // Default GAS WebApp Executable URL
+  var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzfdWxMBFircPVz6X_EGas5IGxeAN0k9W70Ut7vWr0CR97zKVcvrpHkJz9DiJe-WipEkw/exec';
 
   var GasAPI = {
     getUrl: function () {
-      return localStorage.getItem('GAS_WEBAPP_URL') || DEFAULT_GAS_URL;
+      var saved = localStorage.getItem('GAS_WEBAPP_URL');
+      if (saved && saved.trim()) {
+        return saved.trim();
+      }
+      return DEFAULT_GAS_URL;
     },
     setUrl: function (url) {
-      if (url) {
-        url = url.trim();
-        localStorage.setItem('GAS_WEBAPP_URL', url);
+      if (url && url.trim()) {
+        localStorage.setItem('GAS_WEBAPP_URL', url.trim());
+      } else {
+        localStorage.removeItem('GAS_WEBAPP_URL');
       }
     },
     call: function (actionName) {
