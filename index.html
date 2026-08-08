@@ -11,8 +11,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Sistem Absensi Karyawan</title>
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
+  <!-- PWA Data URI Manifest (100% Single File, Tanpa manifest.json eksternal) -->
+  <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Sistem%20Absensi%20Karyawan%22%2C%22short_name%22%3A%22Smart%20Absen%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%23059669%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk%2BM9QDwADhgGAWjR9awAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk%2BM9QDwADhgGAWjR9awAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -23,16 +23,16 @@
   <!-- SheetJS for Excel Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <!-- PWA Service Worker (Blob URL) & Dual Communication gasRun() -->
+  <!-- Single-File PWA Blob Service Worker & Dual Communication gasRun() -->
   <script>
-    // 1. Service Worker via Blob URL
+    // 1. Service Worker via Blob URL (Tanpa file sw.js eksternal)
     if ('serviceWorker' in navigator) {
       try {
         var swCode = "self.addEventListener('install', function(e) { self.skipWaiting(); }); self.addEventListener('activate', function(e) { self.clients.claim(); }); self.addEventListener('fetch', function(e) { var url = new URL(e.request.url); if (url.hostname.indexOf('script.google.com') !== -1 || url.hostname.indexOf('script.googleusercontent.com') !== -1) return; e.respondWith(fetch(e.request).catch(function() { return caches.match(e.request); })); });";
         var blob = new Blob([swCode], { type: 'text/javascript' });
         var blobUrl = URL.createObjectURL(blob);
         navigator.serviceWorker.register(blobUrl)
-          .then(function(reg) { console.log('[PWA] Blob ServiceWorker registered:', reg.scope); })
+          .then(function(reg) { console.log('[PWA] Single-File Blob ServiceWorker registered:', reg.scope); })
           .catch(function(err) { console.warn('[PWA] Blob SW error:', err); });
       } catch (swErr) {
         console.warn('[PWA] SW register error:', swErr);
@@ -40,7 +40,7 @@
     }
 
     // 2. Global GAS API URL & Dual Communication gasRun()
-    window.GAS_API_URL = localStorage.getItem('GAS_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbwnxJ2fk63jkArlAS1tbeSs6-u8hYZ6xU5zdefeq7JE5pIgvtkrcg_J5zKkPHB0fs27Xg/exec';
+    window.GAS_API_URL = localStorage.getItem('GAS_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbzL6IR9NAKASK1GU2V54uMhCd_GAs709ijIZFJRazyelT2afbtXCHLvTAvYUQCwZy8M7A/exec';
 
     function gasRun(funcName) {
       var args = Array.prototype.slice.call(arguments, 1);
@@ -369,7 +369,7 @@
       <!-- Footer Keluar & Install App -->
       <div class="p-4 border-t border-slate-800 space-y-2">
         <button id="btnPwaInstallSidebar" onclick="window.installPWAApp()"
-          class="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-emerald-950/50 hover:bg-gradient-to-r hover:from-emerald-600/50 hover:to-teal-600/40 border border-emerald-800/60 text-emerald-300 hover:text-emerald-100 transition-all duration-200 text-sm font-medium">
+          class="d-none flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-emerald-950/50 hover:bg-gradient-to-r hover:from-emerald-600/50 hover:to-teal-600/40 border border-emerald-800/60 text-emerald-300 hover:text-emerald-100 transition-all duration-200 text-sm font-medium">
           <i class="fa-solid fa-download w-5 text-emerald-400"></i> Install Aplikasi HP
         </button>
 
@@ -4735,11 +4735,17 @@
       });
 
       window.installPWAApp = function () {
+        if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+          Swal.fire('Aplikasi Sudah Terpasang', 'Aplikasi Smart Absen ini sudah terpasang dan sedang berjalan dalam mode Aplikasi Standalone!', 'success');
+          return;
+        }
+
         if (deferredPwaPrompt) {
           deferredPwaPrompt.prompt();
           deferredPwaPrompt.userChoice.then(function (choiceResult) {
             if (choiceResult.outcome === 'accepted') {
-              console.log('User installed PWA application');
+              console.log('User accepted PWA installation');
+              Swal.fire('Proses Instalasi', 'Aplikasi sedang di-install ke layar utama HP Anda...', 'success');
             }
             deferredPwaPrompt = null;
             var btn = document.getElementById('btnPwaInstall');
@@ -4748,7 +4754,28 @@
             if (btnSb) btnSb.classList.add('d-none');
           });
         } else {
-          Swal.fire('Install Aplikasi HP', 'Untuk meng-install aplikasi ini di HP/PC:\n\n• Android/Chrome: Ketik titik tiga ⋮ di browser -> "Tambahkan ke Layar Utama" / "Install Aplikasi"\n• iOS/Safari: Ketik ikon Share ⎋ -> "Add to Home Screen"', 'info');
+          Swal.fire({
+            title: 'Install Aplikasi PWA',
+            html: `
+              <div class="text-left text-xs text-slate-600 leading-relaxed space-y-2">
+                <p>Untuk memasangkan aplikasi <strong>Smart Absen</strong> langsung ke HP:</p>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <p class="font-bold text-slate-800 mb-1"> Android / Google Chrome:</p>
+                  <p>1. Buka situs ini via HTTPS di GitHub Pages</p>
+                  <p>2. Ketik ikon titik tiga <strong>⋮</strong> di pojok kanan atas browser Chrome</p>
+                  <p>3. Pilih <strong>"Install Aplikasi"</strong> / <strong>"Tambahkan ke Layar Utama"</strong></p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <p class="font-bold text-slate-800 mb-1"> iOS / Safari (iPhone):</p>
+                  <p>1. Ketik ikon Share <strong>⎋</strong> di navigasi Safari bawah</p>
+                  <p>2. Geser lalu pilih <strong>"Add to Home Screen" (Tambahkan ke Layar Utama)</strong></p>
+                </div>
+              </div>
+            `,
+            icon: 'info',
+            confirmButtonText: 'Saya Mengerti',
+            confirmButtonColor: '#059669'
+          });
         }
       };
 
