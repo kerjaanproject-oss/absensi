@@ -6,9 +6,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#059669">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Sistem Absensi Karyawan</title>
-  <!-- PWA Manifest & Service Worker -->
+
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
@@ -17,84 +22,109 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <!-- SheetJS for Excel Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- PWA API Bridge Script -->
+
+  <!-- PWA Service Worker (Blob URL) & Dual Communication gasRun() -->
   <script>
-    (function (window) {
-      'use strict';
-      var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycby4lohJeTrUn2D_XfFJhmozQ_murXLGEownqj77q6FXZAD9HGGVIifdybVYtaJ7FTut1w/exec';
+    // 1. Service Worker via Blob URL
+    if ('serviceWorker' in navigator) {
+      try {
+        var swCode = "self.addEventListener('install', function(e) { self.skipWaiting(); }); self.addEventListener('activate', function(e) { self.clients.claim(); }); self.addEventListener('fetch', function(e) { var url = new URL(e.request.url); if (url.hostname.indexOf('script.google.com') !== -1 || url.hostname.indexOf('script.googleusercontent.com') !== -1) return; e.respondWith(fetch(e.request).catch(function() { return caches.match(e.request); })); });";
+        var blob = new Blob([swCode], { type: 'text/javascript' });
+        var blobUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(blobUrl)
+          .then(function(reg) { console.log('[PWA] Blob ServiceWorker registered:', reg.scope); })
+          .catch(function(err) { console.warn('[PWA] Blob SW error:', err); });
+      } catch (swErr) {
+        console.warn('[PWA] SW register error:', swErr);
+      }
+    }
 
-      var GasAPI = {
-        getUrl: function () {
-          var saved = localStorage.getItem('GAS_WEBAPP_URL');
-          if (saved && saved.trim() && saved.trim() !== 'undefined' && saved.trim() !== 'null') {
-            return saved.trim();
-          }
-          return DEFAULT_GAS_URL;
-        },
-        setUrl: function (url) {
-          if (url && url.trim()) {
-            localStorage.setItem('GAS_WEBAPP_URL', url.trim());
-          } else {
-            localStorage.removeItem('GAS_WEBAPP_URL');
-          }
-        },
-        call: function (actionName) {
-          var args = Array.prototype.slice.call(arguments, 1);
-          var gasUrl = this.getUrl();
+    // 2. Global GAS API URL & Dual Communication gasRun()
+    window.GAS_API_URL = localStorage.getItem('GAS_WEBAPP_URL') || 'https://script.google.com/macros/s/AKfycbzL6IR9NAKASK1GU2V54uMhCd_GAs709ijIZFJRazyelT2afbtXCHLvTAvYUQCwZy8M7A/exec';
 
-          if (!gasUrl) {
-            if (window.google && window.google.script && window.google.script.run) {
-              return new Promise(function (resolve, reject) {
-                var runner = window.google.script.run
-                  .withSuccessHandler(function (res) { resolve(res); })
-                  .withFailureHandler(function (err) { reject(err); });
-                if (runner[actionName]) {
-                  runner[actionName].apply(runner, args);
-                } else {
-                  reject(new Error("Function " + actionName + " not found on server."));
-                }
-              });
-            }
-            return Promise.reject(new Error("URL Google Apps Script WebApp belum diatur. Silakan atur WebApp URL di menu Setelan."));
-          }
-
-          var payload = {
-            action: actionName,
-            args: args
-          };
-
-          return fetch(gasUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'text/plain;charset=utf-8'
-            },
-            body: JSON.stringify(payload)
-          })
-            .then(function (response) {
-              if (!response.ok) {
-                throw new Error("HTTP Status " + response.status);
-              }
-              return response.json();
-            })
-            .catch(function (postErr) {
-              console.warn('[GasAPI POST retry with GET]', actionName, postErr);
-              var encodedArgs = encodeURIComponent(JSON.stringify(args));
-              var getUrl = gasUrl + (gasUrl.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(actionName) + '&args=' + encodedArgs;
-              return fetch(getUrl)
-                .then(function (res) {
-                  if (!res.ok) throw new Error("HTTP Status " + res.status);
-                  return res.json();
-                })
-                .catch(function (getErr) {
-                  console.error('[GasAPI GET Failed]', actionName, getErr);
-                  throw new Error("Gagal terhubung ke Google Apps Script backend: (" + (postErr.message || getErr.message || 'CORS/Connection Error') + "). Pastikan seluruh isi file Code.JS terbaru sudah di-copy ke Google Apps Script editor & di-deploy ulang sebagai 'New Version' (Akses: Anyone).");
-                });
+    function gasRun(funcName) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return new Promise(function (resolve, reject) {
+        // Lingkungan Google Apps Script (dalam iframe)
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          var runner = google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(function (err) {
+              reject(new Error(err.message || err.toString()));
             });
+          if (runner[funcName]) {
+            runner[funcName].apply(runner, args);
+            return;
+          }
         }
-      };
 
-      window.GasAPI = GasAPI;
-    })(window);
+        // Lingkungan GitHub Pages / Host Luar (via fetch)
+        var apiUrl = window.GAS_API_URL || localStorage.getItem('GAS_WEBAPP_URL');
+        if (!apiUrl) {
+          reject(new Error("URL WebApp Backend belum diatur. Silakan klik tombol 🔌 di header atas."));
+          return;
+        }
+
+        var payload = {
+          action: funcName,
+          args: args
+        };
+
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        })
+          .then(function (res) {
+            return res.text();
+          })
+          .then(function (text) {
+            if (!text || !text.trim()) {
+              resolve({ success: true });
+              return;
+            }
+            try {
+              var data = JSON.parse(text);
+              resolve(data);
+            } catch (e) {
+              resolve({ success: true, message: text });
+            }
+          })
+          .catch(function (postErr) {
+            var encodedArgs = encodeURIComponent(JSON.stringify(args));
+            var getUrl = apiUrl + (apiUrl.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(funcName) + '&args=' + encodedArgs;
+            fetch(getUrl)
+              .then(function (res) { return res.text(); })
+              .then(function (text) {
+                try {
+                  resolve(JSON.parse(text));
+                } catch (e) {
+                  resolve({ success: true, message: text });
+                }
+              })
+              .catch(function (getErr) {
+                reject(new Error("Gagal terhubung ke Google Apps Script: " + (postErr.message || getErr.message)));
+              });
+          });
+      });
+    }
+
+    var GasAPI = {
+      getUrl: function () {
+        return window.GAS_API_URL;
+      },
+      setUrl: function (url) {
+        if (url && url.trim()) {
+          window.GAS_API_URL = url.trim();
+          localStorage.setItem('GAS_WEBAPP_URL', url.trim());
+        } else {
+          localStorage.removeItem('GAS_WEBAPP_URL');
+        }
+      },
+      call: gasRun
+    };
+
+    window.GasAPI = GasAPI;
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700&display=swap');
