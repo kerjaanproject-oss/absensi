@@ -11,9 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Sistem Absensi Karyawan</title>
 
-  <!-- PWA Data URI Manifest (100% Single File, Tanpa manifest.json eksternal) -->
-  <link rel="manifest"
-    href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Sistem%20Absensi%20Karyawan%22%2C%22short_name%22%3A%22Smart%20Absen%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%23059669%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk%2BM9QDwADhgGAWjR9awAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk%2BM9QDwADhgGAWjR9awAAAABJRU5ErkJggg%3D%3D%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -4724,39 +4722,40 @@
 
       function initPWA() {
         try {
-          if (!document.querySelector('link[rel="manifest"]')) {
-            var manifestObj = {
-              name: "Sistem Absensi Karyawan",
-              short_name: "Smart Absen",
-              description: "Aplikasi Absensi Karyawan Online PWA",
-              start_url: window.location.href,
-              display: "standalone",
-              orientation: "portrait",
-              background_color: "#f8fafc",
-              theme_color: "#059669",
-              icons: [
-                {
-                  src: "data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-                  sizes: "192x192",
-                  type: "image/png",
-                  purpose: "any maskable"
-                },
-                {
-                  src: "data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-                  sizes: "512x512",
-                  type: "image/png",
-                  purpose: "any maskable"
-                }
-              ]
-            };
-            var manifestStr = JSON.stringify(manifestObj);
-            var blob = new Blob([manifestStr], { type: 'application/json' });
-            var manifestURL = URL.createObjectURL(blob);
-            var link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = manifestURL;
-            document.head.appendChild(link);
-          }
+          var oldLink = document.querySelector('link[rel="manifest"]');
+          if (oldLink) oldLink.remove();
+
+          var manifestObj = {
+            name: "Sistem Absensi Karyawan",
+            short_name: "Smart Absen",
+            description: "Aplikasi Absensi Karyawan Online PWA",
+            start_url: window.location.href,
+            display: "standalone",
+            orientation: "portrait",
+            background_color: "#f8fafc",
+            theme_color: "#059669",
+            icons: [
+              {
+                src: "data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                sizes: "192x192",
+                type: "image/png",
+                purpose: "any maskable"
+              },
+              {
+                src: "data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                sizes: "512x512",
+                type: "image/png",
+                purpose: "any maskable"
+              }
+            ]
+          };
+          var manifestStr = JSON.stringify(manifestObj);
+          var blob = new Blob([manifestStr], { type: 'application/json' });
+          var manifestURL = URL.createObjectURL(blob);
+          var link = document.createElement('link');
+          link.rel = 'manifest';
+          link.href = manifestURL;
+          document.head.appendChild(link);
 
           if ('serviceWorker' in navigator) {
             var swCode = `
