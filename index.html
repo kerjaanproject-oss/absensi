@@ -40,7 +40,7 @@
     }
 
     // 2. Global GAS API URL & Dual Communication gasRun()
-    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbw1sM4xESeXFDUmwrB7IHiR4ZqWgp6hCbIPiaHnXO0RAEqB_gX2jfnmvK0evtc04nVV/exec';
+    var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxXyOctKYDpLoXcSw4hEi2p5c-hCH2dnMTDL01KZYy0pCG--kIdprAn5XPsGWpi0CFu/exec';
 
     function getGasUrl() {
       var saved = localStorage.getItem('GAS_WEBAPP_URL');
@@ -4717,68 +4717,90 @@
         return tz.split('/').pop();
       }
 
-      // ==================== PWA INSTALL & SERVICE WORKER ====================
+      // ==================== PWA MANIFEST & SERVICE WORKER INJECTION ====================
       var deferredPwaPrompt = null;
 
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker.register('./sw.js')
-            .then(function (reg) {
-              console.log('[PWA] ServiceWorker registered scope:', reg.scope);
-            })
-            .catch(function (err) {
-              console.warn('[PWA] ServiceWorker registration error:', err);
-            });
-        });
+      function initPWA() {
+        try {
+          if (!document.querySelector('link[rel="manifest"]')) {
+            var manifestObj = {
+              name: "Sistem Absensi Karyawan",
+              short_name: "Smart Absen",
+              description: "Aplikasi Absensi Karyawan Online PWA",
+              start_url: window.location.href,
+              display: "standalone",
+              orientation: "portrait",
+              background_color: "#f8fafc",
+              theme_color: "#059669",
+              icons: [
+                {
+                  src: "data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                  sizes: "192x192",
+                  type: "image/png",
+                  purpose: "any maskable"
+                },
+                {
+                  src: "data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                  sizes: "512x512",
+                  type: "image/png",
+                  purpose: "any maskable"
+                }
+              ]
+            };
+            var manifestStr = JSON.stringify(manifestObj);
+            var blob = new Blob([manifestStr], { type: 'application/json' });
+            var manifestURL = URL.createObjectURL(blob);
+            var link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+          }
+
+          if ('serviceWorker' in navigator) {
+            var swCode = `
+              self.addEventListener('install', (e) => { self.skipWaiting(); });
+              self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+              self.addEventListener('fetch', (e) => {
+                var url = new URL(e.request.url);
+                if (url.hostname.indexOf('script.google.com') !== -1 || url.hostname.indexOf('script.googleusercontent.com') !== -1) return;
+                e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+              });
+            `;
+            var swBlob = new Blob([swCode], { type: 'text/javascript' });
+            var swURL = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swURL).catch(function () { });
+          }
+        } catch (err) {
+          console.log('PWA init note:', err);
+        }
       }
 
       window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
         deferredPwaPrompt = e;
         var btn = document.getElementById('btnPwaInstall');
-        if (btn) btn.classList.remove('d-none');
+        if (btn) btn.style.display = 'flex';
         var btnSb = document.getElementById('btnPwaInstallSidebar');
-        if (btnSb) btnSb.classList.remove('d-none');
+        if (btnSb) btnSb.style.display = 'flex';
       });
 
       window.installPWAApp = function () {
-        if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
-          Swal.fire('Aplikasi Sudah Terpasang', 'Aplikasi Smart Absen ini sudah terpasang dan sedang berjalan dalam mode Aplikasi Standalone!', 'success');
-          return;
-        }
-
         if (deferredPwaPrompt) {
           deferredPwaPrompt.prompt();
           deferredPwaPrompt.userChoice.then(function (choiceResult) {
             if (choiceResult.outcome === 'accepted') {
-              console.log('User accepted PWA installation');
-              Swal.fire('Proses Instalasi', 'Aplikasi sedang di-install ke layar utama HP Anda...', 'success');
+              Swal.fire('Terpasang!', 'Aplikasi Smart Absen telah terinstall di HP Anda.', 'success');
             }
             deferredPwaPrompt = null;
-            var btn = document.getElementById('btnPwaInstall');
-            if (btn) btn.classList.add('d-none');
-            var btnSb = document.getElementById('btnPwaInstallSidebar');
-            if (btnSb) btnSb.classList.add('d-none');
           });
         } else {
           Swal.fire({
-            title: 'Install Aplikasi PWA',
-            html: `
-              <div class="text-left text-xs text-slate-600 leading-relaxed space-y-2">
-                <p>Untuk memasangkan aplikasi <strong>Smart Absen</strong> langsung ke HP:</p>
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <p class="font-bold text-slate-800 mb-1"> Android / Google Chrome:</p>
-                  <p>1. Buka situs ini via HTTPS di GitHub Pages</p>
-                  <p>2. Ketik ikon titik tiga <strong>⋮</strong> di pojok kanan atas browser Chrome</p>
-                  <p>3. Pilih <strong>"Install Aplikasi"</strong> / <strong>"Tambahkan ke Layar Utama"</strong></p>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <p class="font-bold text-slate-800 mb-1"> iOS / Safari (iPhone):</p>
-                  <p>1. Ketik ikon Share <strong>⎋</strong> di navigasi Safari bawah</p>
-                  <p>2. Geser lalu pilih <strong>"Add to Home Screen" (Tambahkan ke Layar Utama)</strong></p>
-                </div>
-              </div>
-            `,
+            title: '📱 Cara Install Aplikasi di HP',
+            html: '<div class="text-start small p-2">' +
+              '<p class="mb-2"><b>Di HP Android (Chrome/Edge):</b><br>1. Tekan tombol menu titik tiga (⋮) di pojok kanan atas browser.<br>2. Pilih <b>"Tambahkan ke Layar Utama"</b> atau <b>"Install Aplikasi"</b>.</p>' +
+              '<hr class="my-2">' +
+              '<p class="mb-0"><b>Di iPhone / iPad (Safari):</b><br>1. Tekan tombol <b>Share</b> (kotak dengan panah ke atas di bagian bawah Safari).<br>2. Geser ke bawah dan pilih <b>"Add to Home Screen"</b> (*Tambahkan ke Layar Utama*).</p>' +
+              '</div>',
             icon: 'info',
             confirmButtonText: 'Saya Mengerti',
             confirmButtonColor: '#059669'
