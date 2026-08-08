@@ -72,18 +72,22 @@
           })
             .then(function (response) {
               if (!response.ok) {
-                throw new Error("HTTP Error status: " + response.status);
+                throw new Error("HTTP Status " + response.status);
               }
               return response.json();
             })
-            .catch(function (err) {
-              console.warn('[GasAPI POST retry with GET]', actionName, err);
+            .catch(function (postErr) {
+              console.warn('[GasAPI POST retry with GET]', actionName, postErr);
               var encodedArgs = encodeURIComponent(JSON.stringify(args));
               var getUrl = gasUrl + (gasUrl.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(actionName) + '&args=' + encodedArgs;
               return fetch(getUrl)
-                .then(function (res) { return res.json(); })
-                .catch(function () {
-                  throw new Error("Gagal terhubung ke Google Apps Script backend. Pastikan WebApp URL sudah di-deploy dengan akses 'Anyone'.");
+                .then(function (res) {
+                  if (!res.ok) throw new Error("HTTP Status " + res.status);
+                  return res.json();
+                })
+                .catch(function (getErr) {
+                  console.error('[GasAPI GET Failed]', actionName, getErr);
+                  throw new Error("Gagal terhubung ke Google Apps Script backend: (" + (postErr.message || getErr.message || 'CORS/Connection Error') + "). Pastikan seluruh isi file Code.JS terbaru sudah di-copy ke Google Apps Script editor & di-deploy ulang sebagai 'New Version' (Akses: Anyone).");
                 });
             });
         }
@@ -361,8 +365,8 @@
           </button>
 
           <!-- GAS Backend URL Settings -->
-          <button onclick="window.openGasUrlModal()"
-            class="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition" title="Atur Backend GAS WebApp URL">
+          <button onclick="window.openGasUrlModal()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition"
+            title="Atur Backend GAS WebApp URL">
             <i class="fa-solid fa-plug text-base"></i>
           </button>
 
@@ -386,13 +390,15 @@
         <div id="page-dashboard" class="app-page space-y-6">
 
           <!-- Date Filter Header -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
             <div>
               <h3 class="font-extrabold text-slate-800 text-base">Ringkasan Absensi Harian</h3>
               <p class="text-xs text-slate-400 mt-0.5">Analisis data absensi harian dan statistik karyawan</p>
             </div>
             <div class="flex items-center gap-2">
-              <label for="filterDashboardTanggal" class="text-xs font-semibold text-slate-500 whitespace-nowrap">Pilih Tanggal:</label>
+              <label for="filterDashboardTanggal" class="text-xs font-semibold text-slate-500 whitespace-nowrap">Pilih
+                Tanggal:</label>
               <input type="date" id="filterDashboardTanggal"
                 class="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 transition text-slate-700 font-semibold bg-slate-50">
               <button onclick="window.refreshDashboardStats()"
@@ -1151,12 +1157,14 @@
                     <i class="fa-solid fa-wifi"></i> Verifikasi Jaringan Wi-Fi / IP Kantor
                   </p>
                   <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="setEnableIPCheck" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                    <input type="checkbox" id="setEnableIPCheck"
+                      class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
                     <span class="text-xs font-semibold text-slate-700">Wajib Wi-Fi Kantor</span>
                   </label>
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 mb-1">IP PUBLIK WI-FI KANTOR (Pisahkan koma jika > 1) *</label>
+                  <label class="block text-[10px] font-bold text-slate-400 mb-1">IP PUBLIK WI-FI KANTOR (Pisahkan koma
+                    jika > 1) *</label>
                   <div class="flex gap-2">
                     <input type="text" id="setOfficeIP" placeholder="Contoh: 180.252.12.34, 114.125.1.2"
                       class="flex-1 px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs outline-none focus:border-teal-500 transition">
@@ -1166,7 +1174,8 @@
                     </button>
                   </div>
                 </div>
-                <p class="text-[10px] text-slate-400">Jika diaktifkan, karyawan wajib terhubung ke koneksi Wi-Fi kantor dengan IP Publik di atas untuk melakukan absensi.</p>
+                <p class="text-[10px] text-slate-400">Jika diaktifkan, karyawan wajib terhubung ke koneksi Wi-Fi kantor
+                  dengan IP Publik di atas untuk melakukan absensi.</p>
               </div>
 
               <div>
